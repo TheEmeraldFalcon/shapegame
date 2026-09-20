@@ -6,20 +6,19 @@ import "core:math"
 
 import "vendor:raylib"
 
+import "../pixel_canvas"
+
 MAX_DELTA_TIME :: 0.25
 
-EngineProperties :: struct {
+Engine_Properties :: struct {
 	tick_rate : int
 }
 
-engine_run :: proc(props: EngineProperties) {
-	prev_time := time.tick_now()
-	delta := 1.0 / f64(props.tick_rate)
-	accumulator := 0.0
-	num_ticks := 0
-	
-	frame_start_time := time.tick_now()
+Engine_Components :: struct {
+	canvas : pixel_canvas.Canvas
+}
 
+engine_run :: proc(props: Engine_Properties) {
 	raylib.SetConfigFlags({.WINDOW_RESIZABLE, .VSYNC_HINT})
 	raylib.InitWindow(640, 480, "Odin Raylib Window")
 
@@ -28,6 +27,18 @@ engine_run :: proc(props: EngineProperties) {
 	fmt.println("Monitor W: ", raylib.GetMonitorWidth(monitor))
 	fmt.println("Monitor H: ", raylib.GetMonitorHeight(monitor))
 	fmt.println("Monitor Hz: ", raylib.GetMonitorRefreshRate(monitor))
+
+	comps : Engine_Components
+	comps.canvas = pixel_canvas.create_canvas(320, 240, raylib.BLACK)
+
+	prev_time := time.tick_now()
+	delta := 1.0 / f64(props.tick_rate)
+	accumulator := 0.0
+	num_ticks := 0
+	
+	frame_start_time := time.tick_now()
+
+	frame_timer := time.tick_now()
 
 	for !raylib.WindowShouldClose() {
 		prev_time = frame_start_time
@@ -39,44 +50,61 @@ engine_run :: proc(props: EngineProperties) {
 		accumulator -= f64(num_ticks) * delta
 
 		for tick_index in 0..<num_ticks {
-			engine_tick(delta)
+			engine_tick(&comps, delta, time.tick_since(frame_timer))
 		}
 
-		engine_frame(accumulator / delta)
+		engine_frame(&comps, accumulator / delta, time.tick_since(frame_timer))
 	}
 	
-	engine_shutdown()
+	engine_shutdown(&comps)
 }
 
-engine_shutdown :: proc() {
+engine_shutdown :: proc(comps : ^Engine_Components) {
 	raylib.CloseWindow()
 
 	fmt.println("engine_shutdown")
 }
 
-engine_tick :: proc(dt: f64) {
+engine_tick :: proc(comps : ^Engine_Components, dt: f64, frame_timer: time.Duration) {
 	fmt.println("engine_tick: ", dt)
+
+	
 }
 
-engine_frame :: proc(alpha: f64) {
+engine_frame :: proc(comps : ^Engine_Components, alpha: f64, frame_timer: time.Duration) {
 	fmt.println("engine_frame: ", alpha)
 
-	canvas := raylib.GenImageColor(320, 240, raylib.BLACK)
- 
-	font := raylib.LoadFont("/usr/share/fonts/tamzen/Tamzen8x16r.ttf")
+	offset := i32(math.round(math.sin_f32(f32(time.duration_seconds(frame_timer))) * 10.))
 
-	raylib.ImageDrawCircle(&canvas, 140, 60, 24, raylib.WHITE)
-	raylib.ImageDrawCircle(&canvas, 140, 60, 20, raylib.BLACK)
-	raylib.ImageDrawTextEx(&canvas, font, "See the child.", raylib.Vector2{12.,12.}, 16., 2., raylib.WHITE)
+	e : pixel_canvas.Shape_Ellipse
+	e.color = raylib.GREEN
+	e.position = pixel_canvas.Vector{130 + offset, 130}
+	e.size = pixel_canvas.Vector{50, 70}
+	e.outline.color = raylib.DARKGREEN
+	e.outline.width = 32
 
-	texture := raylib.LoadTextureFromImage(canvas)
+	es : [dynamic]pixel_canvas.Shape_Ellipse
+	append(&es, e)
+
+//	l : pixel_canvas.Shape_Line
+//	l.color = raylib.GREEN
+//	l.point1 = pixel_canvas.Vector{100, 100}
+//	l.point2 = pixel_canvas.Vector{340, 470}
+//	l.width = 64
+//	l.outline.color = raylib.DARKGREEN
+//	l.outline.width = 32
+//
+//	ls : [dynamic]pixel_canvas.Shape_Line
+//	append(&ls, l)
 
 	raylib.BeginDrawing()
+	raylib.ClearBackground(raylib.WHITE)
 
-	raylib.ClearBackground(raylib.RED)
-//	raylib.DrawTextPro(font, "Amon Gus", 200, 200, 48, raylib.WHITE)
-//	raylib.DrawTextEx(font, "Amon Gus", raylib.Vector2{200., 200.}, 48., 4., raylib.WHITE)
-	raylib.DrawTextureEx(texture, raylib.Vector2{0., 0.}, 0.0, 9, raylib.WHITE)
+	pixel_canvas.start_frame(&comps.canvas)
+
+	pixel_canvas.draw_ellipses(&comps.canvas, es)
+
+	pixel_canvas.present_frame(&comps.canvas)
 
 	raylib.EndDrawing()
 }
