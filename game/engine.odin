@@ -61,20 +61,22 @@ engine_tick :: proc(dt: f64) {
 engine_frame :: proc(alpha: f64) {
 	fmt.println("engine_frame: ", alpha)
 
-	canvas := raylib.GenImageColor(360, 240, raylib.BLACK)
+	canvas := raylib.GenImageColor(320, 240, raylib.BLACK)
+ 
+	font := raylib.LoadFont("/usr/share/fonts/tamzen/Tamzen8x16r.ttf")
 
 	raylib.ImageDrawCircle(&canvas, 140, 60, 24, raylib.WHITE)
 	raylib.ImageDrawCircle(&canvas, 140, 60, 20, raylib.BLACK)
+	raylib.ImageDrawTextEx(&canvas, font, "See the child.", raylib.Vector2{12.,12.}, 16., 2., raylib.WHITE)
 
 	texture := raylib.LoadTextureFromImage(canvas)
-
 
 	raylib.BeginDrawing()
 
 	raylib.ClearBackground(raylib.RED)
-	raylib.DrawText("Amon Gus", 200, 200, 48, raylib.WHITE)
-
-	raylib.DrawTextureEx(texture, raylib.Vector2{0., 0.}, 0.0, 4.0, raylib.WHITE)
+//	raylib.DrawTextPro(font, "Amon Gus", 200, 200, 48, raylib.WHITE)
+//	raylib.DrawTextEx(font, "Amon Gus", raylib.Vector2{200., 200.}, 48., 4., raylib.WHITE)
+	raylib.DrawTextureEx(texture, raylib.Vector2{0., 0.}, 0.0, 9, raylib.WHITE)
 
 	raylib.EndDrawing()
 }
