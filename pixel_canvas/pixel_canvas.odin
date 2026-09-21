@@ -1,5 +1,6 @@
 package pxcv
 
+import "core:fmt"
 import "vendor:raylib"
 
 Outline_Kernel_Positions :: enum {
@@ -27,7 +28,11 @@ Canvas :: struct {
 	clear_color: raylib.Color,
 
 	image : raylib.Image,
-	texture : raylib.Texture
+	texture : raylib.Texture,
+
+	screen_coords : raylib.Vector2,
+
+	screen_scale : f32
 }
 
 Outline :: struct {
@@ -93,9 +98,10 @@ draw_ellipses :: proc(canvas: ^Canvas, shapes : [dynamic]Shape_Ellipse) {
 			for x in center_x - radius_h..=center_x + radius_h {
 				(x >= 0 && x < canvas.image.width && y >= 0 && y < canvas.image.height) or_continue
 
-				dx := (x - center_x) / radius_h
-				dy := (y - center_y) / radius_v
-				if dx * dx + dy * dy <= 1.0 {
+				dx := f32(x - center_x) / f32(radius_h)
+				dy := f32(y - center_y) / f32(radius_v)
+				// Slightly above 1.0 to flatten circle ends a little.
+				if dx * dx + dy * dy <= 1.015 {
 					raylib.ImageDrawPixel(&canvas.image, x, y, shape.color)
 				}
 			}
@@ -108,9 +114,16 @@ draw_ellipses :: proc(canvas: ^Canvas, shapes : [dynamic]Shape_Ellipse) {
 //			full_ol_y := f32(s.size.y) + (f32(s.outline.width) / 2.0)
 ////			raylib.DrawEllipse(s.position.x, s.position.y, full_ol_x, full_ol_y, s.outline.color)
 //		}
+		if s.outline.width > 0 {
+			outline_shape := s
+			outline_shape.size.x += i32(s.outline.width)
+			outline_shape.size.y += i32(s.outline.width)
+			outline_shape.color = s.outline.color
+			
+			write_pixels(canvas, outline_shape)
+		}
 
 		write_pixels(canvas, s)
-		//raylib.DrawEllipse(s.position.x, s.position.y, f32(s.size.x), f32(s.size.y), s.color)
 	}
 }
 
@@ -169,5 +182,5 @@ start_frame :: proc(canvas: ^Canvas) {
 present_frame :: proc(canvas: ^Canvas) {
 	raylib.UpdateTexture(canvas.texture, canvas.image.data)
 
-	raylib.DrawTextureEx(canvas.texture, {0., 0.}, 0., 8.0, raylib.WHITE)
+	raylib.DrawTextureEx(canvas.texture, canvas.screen_coords, 0.0, canvas.screen_scale, raylib.WHITE)
 }

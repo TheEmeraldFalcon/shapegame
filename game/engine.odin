@@ -8,6 +8,9 @@ import "vendor:raylib"
 
 import "../pixel_canvas"
 
+PXCANVAS_W := 320
+PXCANVAS_H := 240
+
 MAX_DELTA_TIME :: 0.25
 
 Engine_Properties :: struct {
@@ -29,7 +32,7 @@ engine_run :: proc(props: Engine_Properties) {
 	fmt.println("Monitor Hz: ", raylib.GetMonitorRefreshRate(monitor))
 
 	comps : Engine_Components
-	comps.canvas = pixel_canvas.create_canvas(320, 240, raylib.BLACK)
+	comps.canvas = pixel_canvas.create_canvas(PXCANVAS_W, PXCANVAS_H, raylib.Color{20, 20, 20, 255})
 
 	prev_time := time.tick_now()
 	delta := 1.0 / f64(props.tick_rate)
@@ -74,31 +77,28 @@ engine_tick :: proc(comps : ^Engine_Components, dt: f64, frame_timer: time.Durat
 engine_frame :: proc(comps : ^Engine_Components, alpha: f64, frame_timer: time.Duration) {
 	fmt.println("engine_frame: ", alpha)
 
+	monitor := raylib.GetCurrentMonitor()
+	screen_w := raylib.GetScreenWidth()
+	screen_h := raylib.GetScreenHeight()
+
+	// TODO: Properly letterbox this if screen width < canvas width.
+	comps.canvas.screen_scale = f32(screen_h) / f32(PXCANVAS_H)
+	comps.canvas.screen_coords.x = f32(screen_w / 2.) - (f32(comps.canvas.width / 2.) * comps.canvas.screen_scale)
+
 	offset := i32(math.round(math.sin_f32(f32(time.duration_seconds(frame_timer))) * 10.))
 
 	e : pixel_canvas.Shape_Ellipse
-	e.color = raylib.GREEN
+	e.color = raylib.Color{20, 20, 20, 255} 
 	e.position = pixel_canvas.Vector{130 + offset, 130}
-	e.size = pixel_canvas.Vector{50, 70}
-	e.outline.color = raylib.DARKGREEN
-	e.outline.width = 32
+	e.size = pixel_canvas.Vector{16, 16}
+	e.outline.color = raylib.WHITE
+	e.outline.width = 2
 
 	es : [dynamic]pixel_canvas.Shape_Ellipse
 	append(&es, e)
 
-//	l : pixel_canvas.Shape_Line
-//	l.color = raylib.GREEN
-//	l.point1 = pixel_canvas.Vector{100, 100}
-//	l.point2 = pixel_canvas.Vector{340, 470}
-//	l.width = 64
-//	l.outline.color = raylib.DARKGREEN
-//	l.outline.width = 32
-//
-//	ls : [dynamic]pixel_canvas.Shape_Line
-//	append(&ls, l)
-
 	raylib.BeginDrawing()
-	raylib.ClearBackground(raylib.WHITE)
+	raylib.ClearBackground(raylib.BLACK)
 
 	pixel_canvas.start_frame(&comps.canvas)
 
