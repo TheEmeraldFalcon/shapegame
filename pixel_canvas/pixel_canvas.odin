@@ -1,6 +1,8 @@
 package pxcv
 
 import "core:fmt"
+import "core:math"
+import "core:math/linalg"
 import "vendor:raylib"
 
 Outline_Kernel_Positions :: enum {
@@ -16,10 +18,7 @@ Outline_Kernel_Positions :: enum {
 
 Outline_Kernel_Set :: bit_set[Outline_Kernel_Positions]
 
-Vector :: struct {
-	x : i32,
-	y : i32,
-}
+Vector :: [2]i32
 
 Canvas :: struct {
 	width : int,
@@ -87,6 +86,10 @@ Shape_Polygon :: struct {
 	point_radius : int
 }
 
+// TODO: Consider REFACTOR
+// Have draw_{shape} function, which uses recursion to draw outline,
+// then call that from draw_{shape}s function.
+
 draw_ellipses :: proc(canvas: ^Canvas, shapes : [dynamic]Shape_Ellipse) {
 	write_pixels :: proc(canvas: ^Canvas, shape: Shape_Ellipse) {
 		center_x := shape.position.x
@@ -149,18 +152,46 @@ draw_lines :: proc(canvas: ^Canvas, shapes: [dynamic]Shape_Line) {
 	point_to_v2 :: proc(v: Vector) -> (raylib.Vector2) {
 		return raylib.Vector2{f32(v.x), f32(v.y)}
 	}
-	
+
 	for s in shapes {
-		p1 := point_to_v2(s.point1)
-		p2 := point_to_v2(s.point2)
+		radius := s.width / 2
+		
+		start_position := raylib.Vector2{f32(s.point1.x), f32(s.point1.y)}
+		end_position := raylib.Vector2{f32(s.point2.x), f32(s.point2.y)}
 
-		if s.outline.width > 0 {
-			ow := f32(s.outline.width / 2.0)
-			
-			raylib.DrawLineEx(p1, p2, f32(s.width) + ow, s.outline.color)
+		line_vector := end_position - start_position
+		line_length_squared := linalg.dot(line_vector, line_vector)
+
+		min_x := int(math.floor(min(start_position.x, end_position.x) - f32(radius)))
+		max_x := int(math.ceil(max(start_position.x, end_position.x) + f32(radius)))
+		min_y := int(math.floor(min(start_position.y, end_position.y) - f32(radius)))
+		max_y := int(math.ceil(max(start_position.y, end_position.y) + f32(radius)))
+
+		radius_squared := f32(radius * radius)
+
+		for y := min_y; y <= max_y; y += 1 {
+			for x := min_x; x <= max_x; x += 1 {
+				pixel_position := raylib.Vector2{
+					f32(x) + 0.5,
+					f32(y) + 0.5,
+				}
+
+				point_to_start := pixel_position - start_position
+
+				t : f32 = 0.0
+				if line_length_squared > 0 {
+					t = linalg.dot(point_to_start, line_vector) / line_length_squared
+					t = clamp(t, 0.0, 1.0)
+				}
+
+				closest_point := start_position + line_vector * t
+				distance_squared := linalg.length2(pixel_position - closest_point)
+
+				if distance_squared <= radius_squared {
+					raylib.ImageDrawPixel(&canvas.image, i32(x), i32(y), s.color)
+				}
+			}
 		}
-
-		raylib.DrawLineEx(p1, p2, f32(s.width), s.color)
 	}
 }
 
