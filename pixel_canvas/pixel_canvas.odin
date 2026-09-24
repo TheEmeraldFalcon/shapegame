@@ -1,3 +1,4 @@
+
 package pxcv
 
 import "core:fmt"
@@ -87,8 +88,10 @@ Shape_Polygon :: struct {
 }
 
 // TODO: Consider REFACTOR
-// Have draw_{shape} function, which uses recursion to draw outline,
-// then call that from draw_{shape}s function.
+//  Have draw_{shape} function, which uses recursion to draw outline,
+//  then call that from draw_{shape}s function.
+// TODO: Another idea
+//  Let the user submit multiple shapes, THEN draw outline around those.
 
 draw_ellipses :: proc(canvas: ^Canvas, shapes : [dynamic]Shape_Ellipse) {
 	write_pixels :: proc(canvas: ^Canvas, shape: Shape_Ellipse) {
@@ -112,11 +115,6 @@ draw_ellipses :: proc(canvas: ^Canvas, shapes : [dynamic]Shape_Ellipse) {
 	}
 	
 	for s in shapes {
-//		if s.outline.width > 0 {
-//			full_ol_x := f32(s.size.x) + (f32(s.outline.width) / 2.0)
-//			full_ol_y := f32(s.size.y) + (f32(s.outline.width) / 2.0)
-////			raylib.DrawEllipse(s.position.x, s.position.y, full_ol_x, full_ol_y, s.outline.color)
-//		}
 		if s.outline.width > 0 {
 			outline_shape := s
 			outline_shape.size.x += i32(s.outline.width)
@@ -153,9 +151,10 @@ draw_lines :: proc(canvas: ^Canvas, shapes: [dynamic]Shape_Line) {
 		return raylib.Vector2{f32(v.x), f32(v.y)}
 	}
 
-	for s in shapes {
+	write_pixels :: proc(canvas: ^Canvas, s: Shape_Line) {
 		radius := s.width / 2
-		
+	
+	
 		start_position := raylib.Vector2{f32(s.point1.x), f32(s.point1.y)}
 		end_position := raylib.Vector2{f32(s.point2.x), f32(s.point2.y)}
 
@@ -192,6 +191,18 @@ draw_lines :: proc(canvas: ^Canvas, shapes: [dynamic]Shape_Line) {
 				}
 			}
 		}
+	}
+
+	for s in shapes {
+		if s.outline.width > 0 {
+			outline_shape := s
+			outline_shape.width += s.outline.width * 2
+			outline_shape.color = s.outline.color
+			
+			write_pixels(canvas, outline_shape)
+		}
+
+		write_pixels(canvas, s)
 	}
 }
 

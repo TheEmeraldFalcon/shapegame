@@ -85,7 +85,7 @@ engine_frame :: proc(comps : ^Engine_Components, alpha: f64, frame_timer: time.D
 	comps.canvas.screen_scale = f32(screen_h) / f32(PXCANVAS_H)
 	comps.canvas.screen_coords.x = f32(screen_w / 2.) - (f32(comps.canvas.width / 2.) * comps.canvas.screen_scale)
 
-	offset := i32(math.round(math.sin_f32(f32(time.duration_seconds(frame_timer))) * 10.))
+	offset := i32(math.round(math.sin_f32(f32(time.duration_seconds(frame_timer)) * 2.) * 10.))
 	offset2 := i32(math.round(math.cos_f32(f32(time.duration_seconds(frame_timer))) * 10.))
 
 	e : pixel_canvas.Shape_Ellipse
@@ -101,11 +101,22 @@ engine_frame :: proc(comps : ^Engine_Components, alpha: f64, frame_timer: time.D
 	ls : [dynamic]pixel_canvas.Shape_Line
 	
 	l1 : pixel_canvas.Shape_Line
-	l1.color = raylib.WHITE
+	l1.color = raylib.Color{20, 20, 20, 255} 
 	l1.point1 = {10, 30 + offset2}
 	l1.point2 = {120 + offset, 80}
 	l1.width = 8
+	l1.outline.color = raylib.WHITE
+	l1.outline.width = 2
 	append(&ls, l1)
+	
+	l2 : pixel_canvas.Shape_Line
+	l2.color = raylib.Color{20, 20, 20, 255} 
+	l2.point1 = {10, 30 + offset2}
+	l2.point2 = {20 + offset, 50}
+	l2.width = 8
+	l2.outline.color = raylib.WHITE
+	l2.outline.width = 2
+	append(&ls, l2)
 
 	raylib.BeginDrawing()
 	raylib.ClearBackground(raylib.BLACK)
